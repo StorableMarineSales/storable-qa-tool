@@ -1,0 +1,4 @@
+anthropic
+streamlit>=1.41.0
+playwright
+reportlab
