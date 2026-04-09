@@ -8,9 +8,7 @@ from typing import Dict, Any, List, Optional
 from textwrap import dedent
 from io import BytesIO
 
-import subprocess
-subprocess.run(["playwright", "install", "chromium"], check=False)
-import anthropic
+import google.generativeai as genai
 import streamlit as st
 from playwright.sync_api import sync_playwright
 from reportlab.lib.pagesizes import letter
@@ -466,30 +464,21 @@ def run_crawler(url: str) -> List[str]:
 # =====================================================================
 
 def call_claude(screenshot_paths: List[str], ic_name: str) -> str:
-    api_key = st.secrets.get("ANTHROPIC_API_KEY", os.environ.get("ANTHROPIC_API_KEY",""))
-    client = anthropic.Anthropic(api_key=api_key)
+    api_key = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY",""))
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
-    content = []
+    prompt = build_master_prompt(ic_name)
+    parts = [prompt]
 
-    # Add screenshots as images
     for path in screenshot_paths:
         if os.path.exists(path):
             with open(path, "rb") as f:
-                img_data = base64.standard_b64encode(f.read()).decode("utf-8")
-            content.append({
-                "type": "image",
-                "source": {"type": "base64", "media_type": "image/png", "data": img_data},
-            })
+                img_data = f.read()
+            parts.append({"mime_type": "image/png", "data": img_data})
 
-    # Add the prompt
-    content.append({"type": "text", "text": build_master_prompt(ic_name)})
-
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=8000,
-        messages=[{"role": "user", "content": content}],
-    )
-    return response.content[0].text
+    response = model.generate_content(parts)
+    return response.text
 
 def parse_output(full_text: str):
     start_tag = "[STRUCTURED_OUTPUT_JSON]"
@@ -580,7 +569,7 @@ def require_auth():
         """, unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1,1,1])
         with col2:
-            st.button("Sign in with Google", on_click=st.login, args=("google",), use_container_width=True, type="primary")
+            st.button("Sign in with Google", on_click=st.login, use_container_width=True, type="primary")
         st.stop()
 
     email = getattr(st.user, "email", "") or ""
