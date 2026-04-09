@@ -8,6 +8,8 @@ from typing import Dict, Any, List, Optional
 from textwrap import dedent
 from io import BytesIO
 
+import subprocess
+subprocess.run(["playwright", "install", "chromium"], check=False)
 import anthropic
 import streamlit as st
 from playwright.sync_api import sync_playwright
