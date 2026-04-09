@@ -578,7 +578,7 @@ def require_auth():
         """, unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1,1,1])
         with col2:
-            st.button("Sign in with Google", on_click=st.login, use_container_width=True, type="primary")
+            st.button("Sign in with Google", on_click=st.login, args=("google",), use_container_width=True, type="primary")
         st.stop()
 
     email = getattr(st.user, "email", "") or ""
